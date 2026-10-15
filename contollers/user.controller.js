@@ -80,6 +80,6 @@ export const loginController=async(req,res)=>{
 }
 
 
-export const getUserProfileController=async(req,user)=>{
+export const getUserProfileController=async(req,res)=>{
     return res.status(200).json({user:req.user})
 }
