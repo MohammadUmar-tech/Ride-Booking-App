@@ -93,3 +93,75 @@ only safe user fields and use the HTTP-only cookie for the token.
     "Error": "<error details>"
   }
   ```
+
+## Log in a user
+
+Authenticates an existing user with their email and password.
+
+- **Method:** `POST`
+- **URL:** `/api/users/login`
+- **Content-Type:** `application/json`
+
+### Request body
+
+```json
+{
+  "email": "jane@example.com",
+  "password": "example-password"
+}
+```
+
+`email` must be a valid email address and `password` must contain at least 6
+characters.
+
+### Response format
+
+Successful login returns **200 OK** with a JSON body:
+
+```json
+{
+  "message": "User Logged in SuccessFully",
+  "Token": "<JWT token>"
+}
+```
+
+The response also sets an HTTP-only `token` cookie containing the same JWT.
+The cookie expires after 24 hours.
+
+### Errors
+
+- **400 Bad Request** — Request validation failed. The body contains an
+  `errors` array with validation details.
+- **400 Bad Request** — No account exists for the submitted email:
+
+  ```json
+  {
+    "message": "User not found please Register first"
+  }
+  ```
+
+- **400 Bad Request** — The password does not match the account:
+
+  ```json
+  {
+    "message": "Password is Incorrect"
+  }
+  ```
+
+- **400 Bad Request** — Email or password is missing:
+
+  ```json
+  {
+    "message": "email and password are Required"
+  }
+  ```
+
+- **500 Internal Server Error** — An unexpected error occurs. The controller
+  returns a `message` and an `error` field:
+
+  ```json
+  {
+    "message": "Internal server Error",
+    "error": "<error details>"
+  }
+  ```
