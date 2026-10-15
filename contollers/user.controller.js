@@ -1,6 +1,7 @@
 import { userModel } from "../models/user.model.js";
 import {validationResult} from "express-validator"
 import { userCreate } from "../services/user.services.js";
+import { blacklistTokenModel } from "../models/blacklist.model.js";
      const option={
          httpOnly:true,
          secure:false,
@@ -82,4 +83,22 @@ export const loginController=async(req,res)=>{
 
 export const getUserProfileController=async(req,res)=>{
     return res.status(200).json({user:req.user})
+}
+
+export const logoutController=async(req,res)=>{
+
+    try {
+        res.clearCookie('token')
+        const token=req.cookies?.token||req.header('Authorization').replace("Bearer ","")
+         if (!token) {
+            return res.status(400).json({ message: 'No token found, already logged out' })
+        }
+        const blacklist=await blacklistTokenModel.create({token})
+        return res.status(200).json({ message: 'User Logged out' });
+    } catch (error) {
+        return res.status(500).json({message:`Internal Server Error`,
+            Error:error
+        })
+    }
+
 }

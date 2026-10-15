@@ -1,6 +1,6 @@
 import express from 'express'
 import { body} from 'express-validator'
-import {userRegistreController,loginController,getUserProfileController} from '../contollers/user.controller.js'
+import {userRegistreController,loginController,getUserProfileController,logoutController} from '../contollers/user.controller.js'
 import { authenticationMiddleware } from '../middlewares/auth.middleware.js'
 const router =express.Router()
 
@@ -17,6 +17,6 @@ router.post('/login',[
 
 
 router.get('/profile',authenticationMiddleware,getUserProfileController)
-
+router.get('/logout',authenticationMiddleware,logoutController)
 
 export default router
