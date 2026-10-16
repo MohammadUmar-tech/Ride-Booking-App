@@ -168,14 +168,12 @@ The cookie expires after 24 hours.
 
 ## Register a captain
 
-Creates a captain account with vehicle details.
+Creates a captain account and its vehicle details. The route is mounted under
+`/api/captains`.
 
 - **Method:** `POST`
 - **URL:** `/api/captains/register`
 - **Content-Type:** `application/json`
-
-The captain router is mounted at `/api/captains`, so the route is
-`/api/captains/register` (not `/api/catains/register`).
 
 ### Request body
 
@@ -196,61 +194,114 @@ The captain router is mounted at `/api/captains`, so the route is
 }
 ```
 
-`email` must be a valid email address. `fullName.firstName` must contain at
-least 3 characters. The route validates `password` with a minimum length of 3
-(its validation message says 6, but the actual configured minimum is 3).
-`vehicle.color` and `vehicle.plate` must each contain at least 3 characters,
-`vehicle.capacity` must be an integer of at least 1, and `vehicle.vehicleType`
-must be `car`, `motorcycle`, or `auto`. `fullName.lastName` is optional.
+| Field | Requirements |
+| --- | --- |
+| `email` | Required; valid email address. Stored in lowercase. |
+| `fullName.firstName` | Required; at least 3 characters. |
+| `fullName.lastName` | Optional; if supplied, at least 3 characters. |
+| `password` | Required; at least 3 characters per route validation. It is hashed with bcrypt before storage. |
+| `vehicle.color` | Required; at least 3 characters. |
+| `vehicle.plate` | Required; at least 3 characters. |
+| `vehicle.capacity` | Required; integer of at least 1. |
+| `vehicle.vehicleType` | Required; one of `car`, `motorcycle`, or `auto`. |
 
-### Response format
-
-If registration succeeds, the controller is written to return **200 OK**:
+The password validator's error text says 6 characters, but its configured
+minimum is 3. The API returns **400 Bad Request** with an `errors` array if
+route validation fails. For example:
 
 ```json
 {
-  "message": "Captain Created Successfully",
-  "captain": {
-    "_id": "<captain id>",
+  "errors": [
+    {
+      "type": "field",
+      "value": "not-an-email",
+      "msg": "Invalid Email",
+      "path": "email",
+      "location": "body"
+    }
+  ]
+}
+```
+
+Example request using `curl`:
+
+```sh
+curl -X POST http://localhost:3000/api/captains/register \
+  -H "Content-Type: application/json" \
+  -d '{
     "email": "captain@example.com",
-    "fullName": {
-      "firstName": "Alex",
-      "lastName": "Morgan"
-    },
+    "fullName": { "firstName": "Alex", "lastName": "Morgan" },
+    "password": "example-password",
     "vehicle": {
       "color": "black",
       "plate": "ABC123",
       "capacity": 4,
       "vehicleType": "car"
     }
+  }'
+```
+
+### Response format
+
+On successful registration, the API returns **200 OK** with a JSON body like:
+
+```json
+{
+  "message": "Captain Created Successfully",
+  "captain": {
+    "_id": "<captain id>",
+    "fullName": {
+      "firstName": "Alex",
+      "lastName": "Morgan"
+    },
+    "email": "captain@example.com",
+    "password": "<bcrypt password hash>",
+    "status": "inactive",
+    "vehicle": {
+      "color": "black",
+      "plate": "ABC123",
+      "capacity": 4,
+      "vehicleType": "car"
+    },
+    "createdAt": "<ISO timestamp>",
+    "updatedAt": "<ISO timestamp>",
+    "__v": 0
   },
   "token": "<JWT token>"
 }
 ```
 
-The response is also intended to set an HTTP-only `token` cookie containing
-the JWT, which expires after 24 hours. The serialized `captain` document may
-include additional Mongoose fields such as `_id`, timestamps, and `__v`.
+The response also sets an HTTP-only `token` cookie containing the JWT
+(`maxAge` 24 hours; `secure` is currently `false`). The JWT expires after
+24 hours. The captain document is returned directly, so the bcrypt password
+hash is included despite the schema's `select: false` setting. The token is
+also included in the JSON response. These sensitive values should not be
+exposed in response bodies in production. The new captain's `status` defaults
+to `inactive`; timestamps and other Mongoose fields are included in the
+serialized document.
 
-**Implementation note:** Captain registration currently has mismatched
-required-field checks and password/vehicle property names between the
-controller and service. It also references `options` when setting the cookie,
-although the declared cookie settings variable is named `option`. As a result,
-a valid request may return **500 Internal Server Error** instead of the
-success response above. The controller's error response is:
+### Errors
 
-```json
-{
-  "message": "Internal server Error",
-  "Error": "<error details>"
-}
-```
+- **400 Bad Request** — Route validation failed. The response contains the
+  `errors` array described above.
+- **401 Unauthorized** — A captain with that email already exists:
 
-Other possible responses include **400 Bad Request** with an `errors` array
-when route validation fails. The controller intends to return **401
-Unauthorized** with `{ "message": "User Alredy Exist with this email" }` for a
-duplicate email, but its current check constructs a model instead of querying
-for an existing captain, so this behavior is not reliable.
+  ```json
+  {
+    "message": "captain Alredy Exist with this email"
+  }
+  ```
+
+- **500 Internal Server Error** — An unexpected error occurs, including
+  missing required fields or a database error. The controller returns the
+  error string in `Error`:
+
+  ```json
+  {
+    "message": "Internal server Error",
+    "Error": "<error details>"
+  }
+  ```
 
 ## Authentication
 
