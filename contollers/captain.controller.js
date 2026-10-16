@@ -5,7 +5,7 @@ import { blacklistTokenModel } from "../models/blacklist.model.js";
 
 const option = {
   httpOnly: true,
-  secure: false,
+  secure: false,  
   maxAge: 24 * 60 * 60 * 1000,
 };
 export const createCaptainController = async (req, res) => {

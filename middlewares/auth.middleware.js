@@ -4,7 +4,7 @@ import { blacklistTokenModel } from '../models/blacklist.model.js'
 import { captainModel } from '../models/captain.model.js'
 export const  authenticationMiddleware=async(req,res,next)=>{
     
-    const token=req.cookies?.token||req.header('Authorization').replace('Bearer ',"")
+    const token=req.cookies?.token||req.header('Authorization')?.replace("Bearer ","")
     
     if(!token){
         return res.status(401).json({message:"Unauthorized Access"})
@@ -32,7 +32,7 @@ export const  authenticationMiddleware=async(req,res,next)=>{
 export const captainAuthenticationMiddleware=async(req,res,next)=>{
 
 
-    const token=req.cookies?.token||req.header('Authorization').replace("Bearer ","")
+    const token=req.cookies?.token||req.header('Authorization')?.replace("Bearer ","")
 
     if(!token){
         return res.status(401).json({message:"Unathorized Captain"})

@@ -1,6 +1,6 @@
 import express from 'express'
 import { captainAuthenticationMiddleware } from '../middlewares/auth.middleware.js'
-import { createCaptainController, getCaptainProfile } from '../contollers/captain.controller.js'
+import { createCaptainController, getCaptainProfile,captainLoginController } from '../contollers/captain.controller.js'
 import { body } from 'express-validator'
 const router =express.Router()
 

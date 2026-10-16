@@ -399,6 +399,159 @@ The captain login/profile/logout routes are not fully functional yet:
 The response examples above describe the intended controller behavior; resolve
 these issues before relying on these endpoints.
 
+## Map endpoints
+
+These endpoints are mounted under `/api/maps` and all require a valid JWT via
+`authenticationMiddleware`.
+
+### Get coordinates for an address
+
+- **Method:** `GET`
+- **URL:** `/api/maps/get-coordinates?address=<address>`
+- **Authentication:** Required
+
+#### Query parameters
+
+| Name | Required | Notes |
+| --- | --- | --- |
+| `address` | Yes | Must be a string at least 3 characters long. |
+
+The controller validates the query string before calling the geocoding
+service. The service uses the OpenStreetMap Nominatim API and returns the
+first matching result.
+
+#### Example request
+
+```sh
+curl -X GET "http://localhost:3000/api/maps/get-coordinates?address=Lahore" \
+  -H "Authorization: Bearer <token>"
+```
+
+#### Example response
+
+```json
+{
+  "ltd": 31.5204,
+  "lng": 74.3587,
+  "display_name": "Lahore, Punjab, Pakistan"
+}
+```
+
+The current implementation returns the latitude value under the key `ltd`
+(instead of `lat`) and the longitude under `lng`.
+
+#### Errors
+
+- **400 Bad Request** — Validation failed. The response contains an `errors`
+  array from `express-validator`.
+- **404 Not Found** — No coordinates could be resolved for the provided
+  address:
+
+  ```json
+  {
+    "message": "Coordinates not found"
+  }
+  ```
+
+### Get travel distance and duration
+
+- **Method:** `GET`
+- **URL:** `/api/maps/get-distance-time?origin=<origin>&destination=<destination>`
+- **Authentication:** Required
+
+#### Query parameters
+
+| Name | Required | Notes |
+| --- | --- | --- |
+| `origin` | Yes | Must be a string at least 3 characters long. |
+| `destination` | Yes | Must be a string at least 3 characters long. |
+
+The service resolves both locations to coordinates, then calls the OSRM route
+service to calculate the driving route between them.
+
+#### Example request
+
+```sh
+curl -X GET "http://localhost:3000/api/maps/get-distance-time?origin=Lahore&destination=Islamabad" \
+  -H "Authorization: Bearer <token>"
+```
+
+#### Example response
+
+```json
+{
+  "distance": {
+    "text": "420.5 km",
+    "value": 420500
+  },
+  "duration": {
+    "text": "7 mins",
+    "value": 420
+  }
+}
+```
+
+#### Errors
+
+- **400 Bad Request** — Invalid or short query values are rejected with an
+  `errors` array.
+- **404 Not Found** — The route service could not find a route or one of the
+  addresses could not be resolved:
+
+  ```json
+  {
+    "message": "Coordinates not found"
+  }
+  ```
+
+### Get address suggestions
+
+- **Method:** `GET`
+- **URL:** `/api/maps/get-suggestions?input=<query>`
+- **Authentication:** Required
+
+#### Query parameters
+
+| Name | Required | Notes |
+| --- | --- | --- |
+| `input` | Yes | Must be a string at least 3 characters long. |
+
+The service queries the Nominatim search API and returns up to 5 matching
+place names.
+
+#### Example request
+
+```sh
+curl -X GET "http://localhost:3000/api/maps/get-suggestions?input=lah" \
+  -H "Authorization: Bearer <token>"
+```
+
+#### Example response
+
+```json
+[
+  "Lahore, Punjab, Pakistan",
+  "Lahore Cantonment, Lahore, Punjab, Pakistan",
+  "Lahore Junction, Lahore, Punjab, Pakistan"
+]
+```
+
+#### Errors
+
+- **400 Bad Request** — Validation failed for the `input` field.
+- **404 Not Found** — The controller returns:
+
+  ```json
+  {
+    "message": "Coordinates not found"
+  }
+  ```
+
+The map routes are designed for location lookup, route estimation, and place
+autocomplete. The current implementation relies on OpenStreetMap/Nominatim and
+OSRM endpoints, so all responses depend on those third-party services being
+available and returning valid data.
+
 ## Authentication
 
 ### How the authentication middleware works
