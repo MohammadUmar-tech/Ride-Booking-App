@@ -4,16 +4,13 @@ import { captainModel } from "../models/captain.model.js";
 
 
 export const captainService=async({email,password,vehicle,fullName})=>{
-
-    if(!email||password||fullName||!vehicle){
+    if(!email||!password||!fullName||!vehicle){
         throw new Error(" email, password,vehicle are required");
     }
-
-    if(!vehicle.color||!vehicle.plate||!vehicle.capacity||!vehicle.vechicleType){
+    if(!vehicle.color||!vehicle.plate||!vehicle.capacity||!vehicle.vehicleType){
         throw new Error("All vehicle are Required")
     }
-
-    const captain=await captainModel({
+    const captain=await captainModel.create({
         email,
         password,
         fullName:{
@@ -24,7 +21,7 @@ export const captainService=async({email,password,vehicle,fullName})=>{
             color:vehicle.color,
             plate:vehicle.plate,
             capacity:vehicle.capacity,
-            vechicleType:vehicle.vechicleType
+            vehicleType:vehicle.vehicleType
         }
     })
     return captain
