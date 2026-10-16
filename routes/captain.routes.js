@@ -1,6 +1,6 @@
 import express from 'express'
 import { captainAuthenticationMiddleware } from '../middlewares/auth.middleware.js'
-import { createCaptainController } from '../contollers/captain.controller.js'
+import { createCaptainController, getCaptainProfile } from '../contollers/captain.controller.js'
 import { body } from 'express-validator'
 const router =express.Router()
 
@@ -15,6 +15,17 @@ router.post('/register',[
     body('vehicle.vehicleType').isIn(['car','motorcycle','auto']).withMessage('Color must be 3 character long')
 
 ],createCaptainController)
+
+router.post('/login', [
+    body('email').isEmail().withMessage('Invalid Email'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long')
+],
+    captainLoginController
+)
+
+router.get('/profile',captainAuthenticationMiddleware,getCaptainProfile)
+
+router.get('/logout',captainAuthenticationMiddleware,)
 
 
 

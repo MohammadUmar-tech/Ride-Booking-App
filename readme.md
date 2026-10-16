@@ -303,6 +303,102 @@ serialized document.
   }
   ```
 
+## Captain login, profile, and logout
+
+These endpoints are mounted under `/api/captains`.
+
+### Log in a captain
+
+- **Method:** `POST`
+- **URL:** `/api/captains/login`
+- **Content-Type:** `application/json`
+
+#### Request body
+
+```json
+{
+  "email": "captain@example.com",
+  "password": "example-password"
+}
+```
+
+The route validates that `email` is a valid email address and `password` has
+at least 6 characters.
+
+The login controller is intended to return **200 OK** with the captain and
+JWT:
+
+```json
+{
+  "token": "<JWT token>",
+  "captain": "<captain document>"
+}
+```
+
+It also sets a `token` cookie. The controller currently loads the password
+hash to compare credentials and returns the captain document in the response,
+so that document may include the hash. Invalid credentials return **401
+Unauthorized**:
+
+```json
+{
+  "message": "Invalid email or password"
+}
+```
+
+Invalid request fields return **400 Bad Request** with an `errors` array.
+
+### Get the captain profile
+
+- **Method:** `GET`
+- **URL:** `/api/captains/profile`
+- **Authentication:** Send the `token` cookie or an
+  `Authorization: Bearer <JWT>` header.
+
+The endpoint is intended to return **200 OK**:
+
+```json
+{
+  "captain": "<authenticated captain document>"
+}
+```
+
+The captain authentication middleware checks the token against the blacklist,
+verifies its signature and expiration, and loads the captain from MongoDB.
+Unauthorized requests are intended to return **401 Unauthorized**.
+
+### Log out a captain
+
+- **Method:** `GET`
+- **URL:** `/api/captains/logout`
+- **Authentication:** Send the `token` cookie or an
+  `Authorization: Bearer <JWT>` header.
+
+A successful logout is intended to clear the token cookie, blacklist the
+presented token, and return **200 OK**:
+
+```json
+{
+  "message": "Logout successfully"
+}
+```
+
+### Current implementation notes for captain endpoints
+
+The captain login/profile/logout routes are not fully functional yet:
+
+- `captain.routes.js` references `captainLoginController` without importing it,
+  which prevents the captain router from loading.
+- The login controller calls `comparePassword` and `generateAuthToken`, while
+  the captain model currently defines `caparePassword` and `generateToken`.
+- The profile middleware assigns the loaded captain to `req.catain`, while the
+  profile controller reads `req.captain`.
+- The logout route has no controller handler, so it does not clear the cookie
+  or blacklist a token.
+
+The response examples above describe the intended controller behavior; resolve
+these issues before relying on these endpoints.
+
 ## Authentication
 
 ### How the authentication middleware works
