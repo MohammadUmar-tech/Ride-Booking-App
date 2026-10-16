@@ -166,6 +166,92 @@ The cookie expires after 24 hours.
   }
   ```
 
+## Register a captain
+
+Creates a captain account with vehicle details.
+
+- **Method:** `POST`
+- **URL:** `/api/captains/register`
+- **Content-Type:** `application/json`
+
+The captain router is mounted at `/api/captains`, so the route is
+`/api/captains/register` (not `/api/catains/register`).
+
+### Request body
+
+```json
+{
+  "email": "captain@example.com",
+  "fullName": {
+    "firstName": "Alex",
+    "lastName": "Morgan"
+  },
+  "password": "example-password",
+  "vehicle": {
+    "color": "black",
+    "plate": "ABC123",
+    "capacity": 4,
+    "vehicleType": "car"
+  }
+}
+```
+
+`email` must be a valid email address. `fullName.firstName` must contain at
+least 3 characters. The route validates `password` with a minimum length of 3
+(its validation message says 6, but the actual configured minimum is 3).
+`vehicle.color` and `vehicle.plate` must each contain at least 3 characters,
+`vehicle.capacity` must be an integer of at least 1, and `vehicle.vehicleType`
+must be `car`, `motorcycle`, or `auto`. `fullName.lastName` is optional.
+
+### Response format
+
+If registration succeeds, the controller is written to return **200 OK**:
+
+```json
+{
+  "message": "Captain Created Successfully",
+  "captain": {
+    "_id": "<captain id>",
+    "email": "captain@example.com",
+    "fullName": {
+      "firstName": "Alex",
+      "lastName": "Morgan"
+    },
+    "vehicle": {
+      "color": "black",
+      "plate": "ABC123",
+      "capacity": 4,
+      "vehicleType": "car"
+    }
+  },
+  "token": "<JWT token>"
+}
+```
+
+The response is also intended to set an HTTP-only `token` cookie containing
+the JWT, which expires after 24 hours. The serialized `captain` document may
+include additional Mongoose fields such as `_id`, timestamps, and `__v`.
+
+**Implementation note:** Captain registration currently has mismatched
+required-field checks and password/vehicle property names between the
+controller and service. It also references `options` when setting the cookie,
+although the declared cookie settings variable is named `option`. As a result,
+a valid request may return **500 Internal Server Error** instead of the
+success response above. The controller's error response is:
+
+```json
+{
+  "message": "Internal server Error",
+  "Error": "<error details>"
+}
+```
+
+Other possible responses include **400 Bad Request** with an `errors` array
+when route validation fails. The controller intends to return **401
+Unauthorized** with `{ "message": "User Alredy Exist with this email" }` for a
+duplicate email, but its current check constructs a model instead of querying
+for an existing captain, so this behavior is not reliable.
+
 ## Authentication
 
 ### How the authentication middleware works
